@@ -776,7 +776,7 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
 	            CURLOPT_RETURNTRANSFER => 1,
 	            CURLOPT_TIMEOUT        => 30,
 	            CURLOPT_SSL_VERIFYPEER => false,
-	            CURLOPT_SSL_VERIFYHOST => 1
+	            CURLOPT_SSL_VERIFYHOST => 2
 	        ) as $option => $value)
 	            curl_setopt($session, $option, $value);
 	
