@@ -252,10 +252,10 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
         }
         
         // Construct notification url
-        $querystring = '';
-        foreach ($notifyParams as $key => $value)
-            $querystring .= $key . '=' . urlencode($value) . '&';
-        $notifyURL = CRM_Utils_System::url('civicrm/payment/ipn', $querystring, true, null, false, true);
+        $notifyURL = $config->userFrameworkBaseURL . 'civicrm/payment/ipn?';
+		foreach ($notifyParams as $key => $value)
+		    $notifyURL .= $key . '=' . urlencode($value) . '&';
+		$notifyURL = substr($notifyURL, 0, -1);
         
 		$cid = isset($relatedContactID) ? $relatedContactID : $params['contactID'];
         
@@ -393,16 +393,10 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
 			if ($errmsg)
 				$errmsg = "The following errors occurred when submitting payment to Sage Pay:<br />" .
 						  $errmsg . "<br />Please contact the site administrator.";
-			
-			$this->error($errmsg);
-			
-			// added as of 4.2.1 - CRM_Core_Error::fatal seems to have stopped working in this context due to the latest set of awesome 
-			// changes to core. Workaround is to override these two variables before calling it.
-			$config->backtrace             = null;
-			CRM_Core_Error::$modeException = null;
-			
+						  
+			// Redirect user back to where they started and display error(s)
 			CRM_Core_Error::fatal($errmsg);
-
+				
 		}
 		
 	}
@@ -435,17 +429,22 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
 	
 	// New callback function for cron calls as of Civi 4.2
 	public function handlePaymentCron() {
-
+	  
 	    require_once 'CRM/Contribute/PseudoConstant.php';
 	    $contribution_status_id = array_flip(CRM_Contribute_PseudoConstant::contributionStatus());
+	    $ppIDs = self::getIDs();
 	    
 	    // Retrieve all recurring payments for Sagepay that are 'In progress' and have a payment due
 	    $recur = CRM_Core_DAO::executeQuery("
 	       SELECT * FROM civicrm_contribution_recur
 	        WHERE next_sched_contribution < NOW()
 	          AND contribution_status_id = 5
-	          AND payment_processor_id IN (" . implode(',', self::getIDs()) . ")
-	    ");
+	          AND payment_processor_id IN (%1, %2)
+	    ", array(
+	          1 => array($ppIDs[0], 'Integer'),
+	          2 => array($ppIDs[1], 'Integer')
+	       )
+	    );
 	    
 	    // For each of those ..
 	    while ($recur->fetch()) {
@@ -463,39 +462,30 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
                         'contribution_recur_id' => $recur->id
                     )
                 );
-                if ($existing['is_error']) { 
+                if (!($existing['is_error'] ? false : $existing = reset(@$existing['values']))) {
                     $this->error('Contribution get failed (api v3)', __CLASS__ . '::' . __METHOD__, __LINE__);
                     continue;
                 }
-                $existing              = reset(@$existing['values']);
-                $first_contribution_id = $existing['contribution_id'];
                 
                 // Use the first installment contribution as the basis for the new one, 
                 // but unset the ids first, so a new record is created
                 
-                unset($existing['id'], $existing['contribution_id'], $existing['trxn_id']);
+                unset($existing['id'], $existing['contribution_id']);
                 
                 // Create new invoice_id for new contribution
-                $existing['invoice_id'] = md5(uniqid(rand(), true));
+                $existing['invoice_id']   = $existing['trxn_id']      = md5(uniqid(rand(), true));
                 $existing['receive_date'] = $existing['receipt_date'] = date('YmdHis');
                 
-                $new_contribution = array_merge($existing, array(
-                    'version'                => '3',
-                    'contribution_status_id' => $contribution_status_id['Pending']
-                ));
-                
-                // Remove any empty keys from the new contribution params, or api v3 will fall over in a heap
-                foreach (array_keys($new_contribution) as $key)
-                    if (empty($new_contribution[$key]))
-                        unset($new_contribution[$key]);
-                                
-                $contribution = civicrm_api("Contribution", "create", $new_contribution);
-                if ($contribution['is_error']) {
-                    $this->error('Contribution create failed (api v3)', __CLASS__ . '::' . __METHOD__ . ' with error message: ' . $contribution['error_message'] . "\n\nParams: " . print_r($data, true) . "\n\n" . mysql_error(), __LINE__);
+                $contribution = civicrm_api("Contribution", "create", 
+                    array_merge($existing, array(
+                        'version'                => '3',
+                        'contribution_status_id' => $contribution_status_id['Pending']
+                    ))
+                );
+                if (!($contribution['is_error'] ? false : $contribution = reset(@$contribution['values']))) {
+                    $this->error('Contribution create failed (api v3)', __CLASS__ . '::' . __METHOD__, __LINE__);
                     continue;
                 }
-                
-                $contribution = reset(@$contribution['values']);
                 
             } else {
                 
@@ -539,7 +529,7 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
                 );
                 
                 if (civicrm_error($contribution)) {
-                    $this->error('Contribution create failed (api v2) with error message: ' . $contribution['error'] . ' - ' . print_r($contribution, true) . "\n\nexisting=" . print_r($existing, true), __CLASS__ . '::' . __METHOD__, __LINE__);
+                    $this->error('Contribution create failed (api v2) - ' . print_r($contribution, true) . "\n\nexisting=" . print_r($existing, true), __CLASS__ . '::' . __METHOD__, __LINE__);
                     continue;
                 }
                                 
@@ -595,24 +585,20 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
  
     // New callback function for payment notifications as of Civi 4.2
     public function handlePaymentNotification() {
- 
+
         require_once 'CRM/Utils/Array.php';
         $module = CRM_Utils_Array::value('mo', $_GET);
-        
-        // Allow post data to be supplied via querystring for debugging purposes
-        if (isset($_GET['debug']))
-            $_POST = array_merge($_POST, $_REQUEST);
-        
+
+        $this->log('Payment notification received. Request = ' . print_r($_REQUEST, true), 4);
+
         require_once dirname(__FILE__) . '/ipn.php';
         $ipn = new uk_co_circleinteractive_payment_sagepay_notify($this);
-       
+
         // Attempt to determine component type ...
         switch ($module) {
             case 'contribute':
             case 'event':
-                ob_start();
                 $ipn->main($module);
-                $output = ob_get_clean();
                 break;
             default:
                 require_once 'CRM/Core/Error.php';
@@ -620,19 +606,16 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
                 echo "Could not get module name from request url\r\n";
         }
         
-        $this->log('Payment notification received. Request = ' . print_r($_REQUEST, true), 4);
+        $output = ob_get_clean();
         $this->log('Sent notification response ' . $output, 4);
-        
         echo $output;
-        
-        // Exit here to prevent Civi from appending all manner of crap to the response, rendering it invalid
-        exit();
-    
+   
     }
     
     public function install() {
 	     
 	     // On install, create a table for keeping track of security keys
+	     require_once "CRM/Core/DAO.php";
 	     CRM_Core_DAO::executeQuery("
 	        CREATE TABLE IF NOT EXISTS `civicrm_sagepay` (
               `id` int(10) unsigned NOT NULL auto_increment,
@@ -648,20 +631,35 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
 	     ");
 	     	     
 	    // Create entry in civicrm_job table for cron call
-        if (CRM_Core_DAO::checkTableExists('civicrm_job'))
-            CRM_Core_DAO::executeQuery("
-                INSERT INTO civicrm_job (
-                   id, domain_id, run_frequency, last_run, name, description, 
-                   api_prefix, api_entity, api_action, parameters, is_active
-                ) VALUES (
-                   NULL, %1, 'Daily', NULL, 'Process Sagepay Recurring Payments', 
-                   'Processes any Sagepay recurring payments that are due',
-                   'civicrm_api3', 'job', 'run_payment_cron', 'processor_name=Sagepay', 0
-                )
-                ", array(
-                    1 => array(CIVICRM_DOMAIN_ID, 'Integer')
-                )
-            );
+        if (CRM_Core_DAO::checkTableExists('civicrm_job')) {
+        	if (self::getCRMVersion() < 4.3) {
+	            CRM_Core_DAO::executeQuery("
+	                INSERT INTO civicrm_job (
+	                   id, domain_id, run_frequency, last_run, name, description, 
+	                   api_prefix, api_entity, api_action, parameters, is_active
+	                ) VALUES (
+	                   NULL, %1, 'Daily', NULL, 'Process Sagepay Recurring Payments', 
+	                   'Processes any Sagepay recurring payments that are due',
+	                   'civicrm_api3', 'job', 'run_payment_cron', 'processor_name=Sagepay', 0
+	                )
+	                ", array(
+	                    1 => array(CIVICRM_DOMAIN_ID, 'Integer')
+	                )
+	            );
+	        } else {
+	        	civicrm_api('job', 'create', array(
+		            'version'       => 3,
+		            'name'          => ts('Process Sagepay Recurring Payments'),
+		            'description'   => ts('Processes any Sagepay recurring payments that are due'),
+		            'run_frequency' => 'Daily',
+		            'api_entity'    => 'job',
+		            'api_action'    => 'run_payment_cron',
+		            'parameters'    => 'processor_name=Sagepay',
+		            'is_active'     => 0
+		        ));
+	        }
+
+        }
     }
     
 	public function log($message, $level=4) {
@@ -678,6 +676,9 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
     }
             
     public function uninstall() {
+    
+        // On uninstall, remove sagepay data table
+        require_once "CRM/Core/DAO.php";
         
         CRM_Core_DAO::executeQuery("DROP TABLE civicrm_sagepay");
         
@@ -731,7 +732,7 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
     }
     
 	// Get Civi version as float
-	public function getCRMVersion() {
+	protected function getCRMVersion() {
 	    $crmversion = explode('.', ereg_replace('[^0-9\.]','', CRM_Utils_System::version()));
         return floatval($crmversion[0] . '.' . $crmversion[1]);
 	}
@@ -747,14 +748,7 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
             $ids[] = $dao->id;
 	    return $ids;
 	}
-	
-	protected function performTableUpgradeCheck() {
-        $dao = CRM_Core_DAO::executeQuery('DESCRIBE civicrm_sagepay');    
-        while ($dao->fetch()) {
-        
-        }
-    }
-	
+		
     // Send POST request using cURL	
 	protected function requestPost($url, $data){
 		
