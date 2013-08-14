@@ -647,7 +647,8 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
 	                )
 	            );
 	        } else {
-	        	civicrm_api('job', 'create', array(
+
+	        	$result = civicrm_api('job', 'create', array(
 		            'version'       => 3,
 		            'name'          => ts('Process Sagepay Recurring Payments'),
 		            'description'   => ts('Processes any Sagepay recurring payments that are due'),
@@ -657,6 +658,8 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
 		            'parameters'    => 'processor_name=Sagepay',
 		            'is_active'     => 0
 		        ));
+		        watchdog('andyw', 'api result = <pre>' . print_r($result, true) . '</pre>');
+	        
 	        }
 
         }
@@ -686,15 +689,9 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
         if (CRM_Core_DAO::checkTableExists('civicrm_job'))
             CRM_Core_DAO::executeQuery("
                 DELETE FROM civicrm_job 
-                      WHERE api_prefix = 'civicrm_api3'
-                        AND api_entity = 'job'
+                      WHERE api_entity = 'job'
                         AND api_action = 'run_payment_cron'
-                        AND parameters = 'processor_name=Sagepay'
-                        AND domain_id  = %1
-            ", array(
-                   1 => array(CIVICRM_DOMAIN_ID, 'Integer')
-               )
-            );
+            ");
     
     }
     
