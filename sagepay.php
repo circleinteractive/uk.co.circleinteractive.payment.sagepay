@@ -658,7 +658,6 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
 		            'parameters'    => 'processor_name=Sagepay',
 		            'is_active'     => 0
 		        ));
-		        watchdog('andyw', 'api result = <pre>' . print_r($result, true) . '</pre>');
 	        
 	        }
 
