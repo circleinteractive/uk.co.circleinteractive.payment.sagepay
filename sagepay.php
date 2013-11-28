@@ -252,11 +252,12 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
         }
         
         // Construct notification url
-        $notifyURL = $config->userFrameworkBaseURL . 'civicrm/payment/ipn?';
+		$querystring = array();
 		foreach ($notifyParams as $key => $value)
-		    $notifyURL .= $key . '=' . urlencode($value) . '&';
-		$notifyURL = substr($notifyURL, 0, -1);
-        
+			$querystring[] = $key . '=' . urlencode($value);
+		
+		$notifyURL = CRM_Utils_System::url('civicrm/payment/ipn', implode('&', $querystring), true, null, false, true, false);
+		    
 		$cid = isset($relatedContactID) ? $relatedContactID : $params['contactID'];
         
         // Query contact record via Civi api
