@@ -793,4 +793,3 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
         
 };
 
-// Forcing commit
