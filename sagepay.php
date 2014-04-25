@@ -684,7 +684,7 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
     }
     
     // Get Civi version as float
-    protected function getCRMVersion() {
+    public function getCRMVersion() {
         $crmversion = explode('.', ereg_replace('[^0-9\.]','', CRM_Utils_System::version()));
         return floatval($crmversion[0] . '.' . $crmversion[1]);
     }
