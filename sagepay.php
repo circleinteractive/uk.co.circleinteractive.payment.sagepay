@@ -22,7 +22,7 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
     protected $_mode           = null;
     static private $_singleton = null; 
     
-    public static function &singleton($mode, &$paymentProcessor) {
+    public static function &singleton($mode = 'test', &$paymentProcessor, &$paymentForm = null, $force = false) {
         
         $processorName = $paymentProcessor['name'];
         if (is_null(self::$_singleton[$processorName]))
