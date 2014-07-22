@@ -638,7 +638,8 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
         // On uninstall, remove sagepay data table
         require_once "CRM/Core/DAO.php";
         
-        CRM_Core_DAO::executeQuery("DROP TABLE civicrm_sagepay");
+        // probably not a good idea to remove this table once created - andyw, 22/07/2014
+        //CRM_Core_DAO::executeQuery("DROP TABLE civicrm_sagepay");
         
         // Also, remove the entry we created in civicrm_job
         if (CRM_Core_DAO::checkTableExists('civicrm_job'))
