@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <extension key="uk.co.circleinteractive.payment.sagepay" type="payment">
-  <downloadUrl>http://extensions.circle-interactive.co.uk/uk.co.circleinteractive.payment.sagepay-v2.6.zip</downloadUrl>
+  <downloadUrl>http://extensions.circle-interactive.co.uk/uk.co.circleinteractive.payment.sagepay-v2.7.zip</downloadUrl>
   <file>sagepay</file>
   <name>Sagepay</name>
   <description>Sagepay Payment Processor</description>
@@ -10,15 +10,16 @@
   <license>GPL2</license>
   <maintainer>
     <author>Andrew Walker - Circle Interactive</author>
-    <email>support (at) circle-interactive (dot) co (dot) uk</email>
+    <email>andyw (at) circle-interactive (dot) co (dot) uk</email>
   </maintainer>
-  <releaseDate>2014-07-21</releaseDate>
-  <version>2.6</version>
+  <releaseDate>2014-09-05</releaseDate>
+  <version>2.7</version>
   <develStage>stable</develStage>
   <compatibility>
     <ver>4.2</ver>
     <ver>4.3</ver>
     <ver>4.4</ver>
+    <ver>4.5</ver>
   </compatibility>
   <comments>For support, please contact project team on the forums.</comments>
   <typeInfo>
