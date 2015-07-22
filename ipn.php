@@ -68,11 +68,14 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
 	        $ids['vendor'],           $input['AVSCV2'],        $security_key,           $input['AddressResult'],
 			$input['PostCodeResult'], $input['CV2Result'],     $input['GiftAid'],       $input['3DSecureStatus'],
             $input['CAVV'],           $input['AddressStatus'], $input['PayerStatus'],   $input['CardType'],
-			$input['Last4Digits']
+			$input['Last4Digits'],    $input['DeclineCode'],   $input['ExpiryDate'],    $input['FraudResponse'],
+            $input['BankAuthCode']
 		))));
 	    		
 		// Compare our locally constructed signature to the VPS signature returned by Sagepay
 		if ($signature !== $input['VPSSignature']) {
+
+            CRM_Core_Error::debug_log_message('Invalid VPS Signature: ' . print_r($input, true));
 			
 			// Not matched, send INVALID response and return 
 			$url         = ($component == 'event') ? 'civicrm/event/register' : 'civicrm/contribute/transact';
@@ -264,6 +267,13 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
         $input['CardType']       = self::retrieve('CardType',       'String', 'POST', false);
         $input['Last4Digits']    = self::retrieve('Last4Digits',    'String', 'POST', false);
         $input['VPSSignature']   = self::retrieve('VPSSignature',   'String', 'POST', false);
+
+        # added for protocol v3.0 ..
+        $input['DeclineCode']    = self::retrieve('DeclineCode',   'String', 'POST', false);
+        $input['ExpiryDate']     = self::retrieve('ExpiryDate',    'String', 'POST', false);
+        $input['FraudResponse']  = self::retrieve('FraudResponse', 'String', 'POST', false);
+        $input['BankAuthCode']   = self::retrieve('BankAuthCode',  'String', 'POST', false);
+
             
 	}
 	

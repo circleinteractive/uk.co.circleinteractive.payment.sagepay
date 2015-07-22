@@ -162,7 +162,7 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
         
         $config = &CRM_Core_Config::singleton();
         $repeatParams = array(
-            'VPSProtocol'         => '2.23',
+            'VPSProtocol'         => '3.00',
             'TxType'              => 'REPEAT',
             'Vendor'              => $this->_paymentProcessor['user_name'],
             'VendorTxCode'        => $params['invoiceID'],
@@ -304,7 +304,7 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
         $registrationParams = array(
                             
             'Vendor'             => $this->_paymentProcessor['user_name'],
-            'VPSProtocol'        => '2.23',
+            'VPSProtocol'        => '3.00',
             'TxType'             => $params['TxType'],
             'VendorTxCode'       => $params['invoiceID'],
             'Amount'             => sprintf("%.2f", $params['amount']),
