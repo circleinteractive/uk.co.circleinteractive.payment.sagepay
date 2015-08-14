@@ -465,7 +465,10 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
         $this->completeTransaction($input, $ids, $objects, $transaction, $recur);
 
         $url       = ($input['component'] == 'event' ) ? 'civicrm/event/register' : 'civicrm/contribute/transact';
-        $returnURL = CRM_Utils_System::url($url, "_qf_ThankYou_display=1&qfKey=" . SAGEPAY_QFKEY, true, null, false, true);
+
+        // Redirect to the URL passed by successUrl GET variable, which is set in 'uk_co_circleinteractive_payment_sagepay'
+        //$returnURL = CRM_Utils_System::url($url, "_qf_ThankYou_display=1&qfKey=" . SAGEPAY_QFKEY, true, null, false, true);
+        $returnURL = self::retrieve('successUrl', 'String', 'GET');
 
 		echo "Status=OK\r\n" . 
 		     "RedirectURL=$returnURL\r\n";

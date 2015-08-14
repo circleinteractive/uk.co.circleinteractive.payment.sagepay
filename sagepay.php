@@ -341,9 +341,17 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
             $contact['state_province'];
                 
         // Allow other modules / extensions to modify params before sending registration post
+
+        // Hack to make sure the hook 'webform_civicrm_civicrm_alterPaymentProcessorParams'
+        // updates the values of 'return' and 'cancel_return' items in the $registrationParams
+        $registrationParams['return'] = $registrationParams['cancel_return'] = 'nothing';
         
         require_once('CRM/Utils/Hook.php');
         CRM_Utils_Hook::alterPaymentProcessorParams($this, $params, $registrationParams);
+
+        // Add 'successUrl' param to the notification URL, which will include the URL to redirect to upon success.
+        // This query param is being retrieved in 'uk_co_circleinteractive_payment_sagepay_notify' when redirecting.
+        $registrationParams['NotificationURL'] .= '&successUrl=' . urlencode($registrationParams['return']);
         
         // Construct post string from registrationParams array
         
