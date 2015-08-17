@@ -1,5 +1,7 @@
 <?php
 
+/** RM: Customisations have been annotated using a custom PHPDoc tag @custom */
+
 /* 
  * Sagepay Extension for CiviCRM - Circle Interactive 2012
  * Author: andyw@circle
@@ -409,7 +411,13 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
         
         $url         = ($this->component == 'event') ? 'civicrm/event/register' : 'civicrm/contribute/transact';
         $cancel      = ($this->component == 'event') ? '_qf_Register_display'   : '_qf_Main_display';
-        $cancelURL   = CRM_Utils_System::url($url, "$cancel=1&cancel=1&qfKey=" . SAGEPAY_QFKEY, true, null, false, true);
+
+        /**
+         * @custom This is commented out so as to allow redirection to the URL passed by 'failureUrl'
+         * GET variable, which is set in 'uk_co_circleinteractive_payment_sagepay'
+         */
+        // $cancelURL   = CRM_Utils_System::url($url, "$cancel=1&cancel=1&qfKey=" . SAGEPAY_QFKEY, true, null, false, true);
+        $cancelURL   = self::retrieve('failureUrl', 'String', 'GET');
 		
 		// Check status returned by gateway ...
 		
@@ -466,7 +474,10 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
 
         $url       = ($input['component'] == 'event' ) ? 'civicrm/event/register' : 'civicrm/contribute/transact';
 
-        // Redirect to the URL passed by successUrl GET variable, which is set in 'uk_co_circleinteractive_payment_sagepay'
+        /**
+         * @custom This is commented out so as to allow redirection to the URL passed by 'successUrl'
+         * GET variable, which is set in 'uk_co_circleinteractive_payment_sagepay'
+         */
         //$returnURL = CRM_Utils_System::url($url, "_qf_ThankYou_display=1&qfKey=" . SAGEPAY_QFKEY, true, null, false, true);
         $returnURL = self::retrieve('successUrl', 'String', 'GET');
 
