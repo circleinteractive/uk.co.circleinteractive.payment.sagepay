@@ -359,12 +359,6 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
          */
         $registrationParams['NotificationURL'] .= '&successUrl=' . urlencode($registrationParams['return']);
 
-        /**
-         * @custom Add 'failureUrl' param to the notification URL, which will include the URL to redirect to upon failure.
-         * This query param is being retrieved in 'uk_co_circleinteractive_payment_sagepay_notify' when redirecting.
-         */
-        $registrationParams['NotificationURL'] .= '&failureUrl=' . urlencode($config->userFrameworkBaseURL);
-
         // Construct post string from registrationParams array
 
         $post = '';

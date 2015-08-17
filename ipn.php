@@ -417,7 +417,7 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
          * GET variable, which is set in 'uk_co_circleinteractive_payment_sagepay'
          */
         // $cancelURL   = CRM_Utils_System::url($url, "$cancel=1&cancel=1&qfKey=" . SAGEPAY_QFKEY, true, null, false, true);
-        $cancelURL   = self::retrieve('failureUrl', 'String', 'GET');
+        $cancelURL   = CRM_Core_Config::singleton()->userFrameworkBaseURL;
 		
 		// Check status returned by gateway ...
 		
@@ -450,7 +450,11 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
             
             $url       = ($this->component == 'event') ? 'civicrm/event/register' : 'civicrm/contribute/transact';
             $cancel    = ($this->component == 'event') ? '_qf_Register_display'   : '_qf_Main_display';
-            $cancelURL = CRM_Utils_System::url($url, "$cancel=1&cancel=1&qfKey=" . SAGEPAY_QFKEY, true, null, false, true);			
+            /**
+             * @custom This is commented out so as to allow redirection to the URL passed by 'failureUrl'
+             * GET variable, which is set in 'uk_co_circleinteractive_payment_sagepay'
+             */
+            // $cancelURL = CRM_Utils_System::url($url, "$cancel=1&cancel=1&qfKey=" . SAGEPAY_QFKEY, true, null, false, true);
             
             echo "Status=INVALID\r\n" .
                  "RedirectURL=$cancelURL\r\n" . 
