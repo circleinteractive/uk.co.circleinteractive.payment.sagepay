@@ -346,9 +346,12 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
 
         /**
          * @custom Hack to make sure the hook 'webform_civicrm_civicrm_alterPaymentProcessorParams'
-         * updates the values of 'return' and 'cancel_return' items in the $registrationParams.
+         * updates the values of 'return' and 'cancel_return' items in the $registrationParams. This hack only
+         * comes into action when the user is submitting a webform, as opposed to civi's native page.
          */
-        $registrationParams['return'] = $registrationParams['cancel_return'] = 'nothing';
+        if (!empty($params['webform_redirect_success']) && !empty($params['webform_redirect_cancel'])) {
+            $registrationParams['return'] = $registrationParams['cancel_return'] = 'nothing';
+        }
 
         require_once('CRM/Utils/Hook.php');
         CRM_Utils_Hook::alterPaymentProcessorParams($this, $params, $registrationParams);
@@ -356,8 +359,13 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
         /**
          * @custom Add 'successUrl' param to the notification URL, which will include the URL to redirect to upon success.
          * This query param is being retrieved in 'uk_co_circleinteractive_payment_sagepay_notify' when redirecting.
+         * This hack only comes into action when the user is submitting a webform, as opposed to civi's native page.
          */
-        $registrationParams['NotificationURL'] .= '&successUrl=' . urlencode($registrationParams['return']);
+        if (!empty($registrationParams['return'])) {
+            $registrationParams['NotificationURL'] .= '&successUrl=' . urlencode($registrationParams['return']);
+        }
+
+        CRM_Core_Session::singleton()->set('successUrl', $registrationParams['return']);
 
         // Construct post string from registrationParams array
 

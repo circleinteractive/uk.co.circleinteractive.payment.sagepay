@@ -412,13 +412,19 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
         $url         = ($this->component == 'event') ? 'civicrm/event/register' : 'civicrm/contribute/transact';
         $cancel      = ($this->component == 'event') ? '_qf_Register_display'   : '_qf_Main_display';
 
+        $cancelURL   = CRM_Utils_System::url($url, "$cancel=1&cancel=1&qfKey=" . SAGEPAY_QFKEY, true, null, false, true);
+
         /**
-         * @custom This is commented out so as to allow redirection to the URL passed by 'failureUrl'
-         * GET variable, which is set in 'uk_co_circleinteractive_payment_sagepay'
+         * @custom This sets the cancel URL to the webform's URL, in case the user came from a webform.
          */
-        // $cancelURL   = CRM_Utils_System::url($url, "$cancel=1&cancel=1&qfKey=" . SAGEPAY_QFKEY, true, null, false, true);
-        $cancelURL   = CRM_Core_Config::singleton()->userFrameworkBaseURL;
-		
+        if ($returnURL = self::retrieve('successUrl', 'String', 'GET', false)) {
+            if (($pos = strpos($returnURL, '?')) !== false) {
+                if (($baseReturnURL = substr($returnURL, 0, $pos)) !== false) {
+                    $cancelURL = $baseReturnURL;
+                }
+            }
+        }
+
 		// Check status returned by gateway ...
 		
 	    if ($status == 'REJECTED' || $status == 'ERROR' || $status == 'NOTAUTHED') {
@@ -482,8 +488,9 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
          * @custom This is commented out so as to allow redirection to the URL passed by 'successUrl'
          * GET variable, which is set in 'uk_co_circleinteractive_payment_sagepay'
          */
-        //$returnURL = CRM_Utils_System::url($url, "_qf_ThankYou_display=1&qfKey=" . SAGEPAY_QFKEY, true, null, false, true);
-        $returnURL = self::retrieve('successUrl', 'String', 'GET');
+        if (!$returnURL = self::retrieve('successUrl', 'String', 'GET', false)) {
+            $returnURL = CRM_Utils_System::url($url, "_qf_ThankYou_display=1&qfKey=" . SAGEPAY_QFKEY, true, null, false, true);
+        }
 
 		echo "Status=OK\r\n" . 
 		     "RedirectURL=$returnURL\r\n";
