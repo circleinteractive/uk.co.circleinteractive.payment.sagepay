@@ -418,7 +418,7 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
          * @custom This sets the cancel URL to the webform's URL, in case the user came from a webform.
          */
         if ($returnURL = self::retrieve('successUrl', 'String', 'GET', false)) {
-            if (($pos = strpos($returnURL, '?')) !== false) {
+            if (($pos = strpos($returnURL, 'done')) !== false) {
                 if (($baseReturnURL = substr($returnURL, 0, $pos)) !== false) {
                     $cancelURL = $baseReturnURL;
                 }
