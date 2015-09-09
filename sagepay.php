@@ -361,19 +361,7 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
          * This query param is being retrieved in 'uk_co_circleinteractive_payment_sagepay_notify' when redirecting.
          * This hack only comes into action when the user is submitting a webform, as opposed to civi's native page.
          */
-        if (!empty($registrationParams['return'])) {
-            $parsedUrl = drupal_parse_url($registrationParams['return']);
-
-            $matches = array();
-            preg_match('/node\/([0-9]+)\/done/', $parsedUrl['path'], $matches);
-
-            $node = $matches[1];
-            $sid = $parsedUrl['query']['sid'];
-            $token = $parsedUrl['query']['token'];
-
-            $registrationParams['NotificationURL'] .= "&node={$node}&sid={$sid}&token={$token}";
-//          $registrationParams['NotificationURL'] .= '&successUrl=' . urlencode($registrationParams['return']);
-        }
+        $this->addReturnParams($registrationParams);
 
         // Construct post string from registrationParams array
 
@@ -772,6 +760,32 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
             $output[trim(substr($response[$i], 0, $splitAt))] = trim(substr($response[$i], ($splitAt+1)));
         }
         return $output;
+    }
+
+    protected function addReturnParams(&$registrationParams) {
+        if (!empty($registrationParams['return'])) {
+            $parsedUrl = drupal_parse_url($registrationParams['return']);
+
+            $matches = array();
+            preg_match('/node\/([0-9]+)\/done/', $parsedUrl['path'], $matches);
+
+            $params = array();
+            if (isset($matches[1])) {
+                $params[] = "node={$matches[1]}";
+            }
+            if (isset($parsedUrl['query'])) {
+                if (isset($parsedUrl['query']['sid'])) {
+                    $params[] = "sid={$parsedUrl['query']['sid']}";
+                }
+                if (isset($parsedUrl['query']['token'])) {
+                    $params[] = "token={$parsedUrl['query']['token']}";
+                }
+            }
+
+            if ($params) {
+                $registrationParams['NotificationURL'] .= '&' . implode('&', $params);
+            }
+        }
     }
 
 };
