@@ -418,7 +418,7 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
          * @custom This sets the cancel URL to the webform's URL, in case the user came from a webform.
          */
         if (($node = self::retrieve('node', 'String', 'GET', false)) !== null) {
-            $cancelURL = CRM_Utils_System::url("node/{$node}");
+            $cancelURL = CRM_Utils_System::url("node/{$node}", true, null, false, true);
         }
 
 //        if ($returnURL = self::retrieve('successUrl', 'String', 'GET', false)) {
@@ -501,7 +501,7 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
                 $query[] = "token={$token}";
             }
 
-            $returnURL = CRM_Utils_System::url("node/{$node}/done", implode('&', $query));
+            $returnURL = CRM_Utils_System::url("node/{$node}/done", implode('&', $query), true, null, false, true);
         } else {
             $returnURL = CRM_Utils_System::url($url, "_qf_ThankYou_display=1&qfKey=" . SAGEPAY_QFKEY, true, null, false, true);
         }
