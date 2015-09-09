@@ -362,10 +362,18 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
          * This hack only comes into action when the user is submitting a webform, as opposed to civi's native page.
          */
         if (!empty($registrationParams['return'])) {
-            $registrationParams['NotificationURL'] .= '&successUrl=' . urlencode($registrationParams['return']);
-        }
+            $parsedUrl = drupal_parse_url($registrationParams['return']);
 
-        CRM_Core_Session::singleton()->set('successUrl', $registrationParams['return']);
+            $matches = array();
+            preg_match('/node\/([0-9]+)\/done/', $parsedUrl['path'], $matches);
+
+            $node = $matches[1];
+            $sid = $parsedUrl['query']['sid'];
+            $token = $parsedUrl['query']['token'];
+
+            $registrationParams['NotificationURL'] .= "&node={$node}&sid={$sid}&token={$token}";
+//          $registrationParams['NotificationURL'] .= '&successUrl=' . urlencode($registrationParams['return']);
+        }
 
         // Construct post string from registrationParams array
 
