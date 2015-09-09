@@ -414,20 +414,11 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
 
         $cancelURL   = CRM_Utils_System::url($url, "$cancel=1&cancel=1&qfKey=" . SAGEPAY_QFKEY, true, null, false, true);
 
-        /**
-         * @custom This sets the cancel URL to the webform's URL, in case the user came from a webform.
-         */
+        /** @custom This sets the cancel URL to the webform's URL, in case the user came from a webform. */
         if (($node = self::retrieve('node', 'String', 'GET', false)) !== null) {
             $cancelURL = CRM_Utils_System::url("node/{$node}", null, true, null, false, true);
         }
-
-//        if ($returnURL = self::retrieve('successUrl', 'String', 'GET', false)) {
-//            if (($pos = strpos($returnURL, 'done')) !== false) {
-//                if (($baseReturnURL = substr($returnURL, 0, $pos)) !== false) {
-//                    $cancelURL = $baseReturnURL;
-//                }
-//            }
-//        }
+        // end custom
 
 		// Check status returned by gateway ...
 		
@@ -488,9 +479,12 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
 
         $url       = ($input['component'] == 'event' ) ? 'civicrm/event/register' : 'civicrm/contribute/transact';
 
+        /** @custom This is commented out in favour of the logic below */
+        // $returnURL = CRM_Utils_System::url($url, "_qf_ThankYou_display=1&qfKey=" . SAGEPAY_QFKEY, true, null, false, true);
+        // end custom
+
         /**
-         * @custom This is commented out so as to allow redirection to the URL passed by 'successUrl'
-         * GET variable, which is set in 'uk_co_circleinteractive_payment_sagepay'
+         * @custom This builds the return URL based on whether the form submitted was a Webform or a Civi's native form.
          */
         if (($node = self::retrieve('node', 'String', 'GET', false)) !== null) {
             $query = array();
@@ -505,12 +499,9 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
         } else {
             $returnURL = CRM_Utils_System::url($url, "_qf_ThankYou_display=1&qfKey=" . SAGEPAY_QFKEY, true, null, false, true);
         }
+        // end custom
 
-//        if (!$returnURL = self::retrieve('successUrl', 'String', 'GET', false)) {
-//            $returnURL = CRM_Utils_System::url($url, "_qf_ThankYou_display=1&qfKey=" . SAGEPAY_QFKEY, true, null, false, true);
-//        }
-
-		echo "Status=OK\r\n" . 
+		echo "Status=OK\r\n" .
 		     "RedirectURL=$returnURL\r\n";
 		
     }

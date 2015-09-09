@@ -356,12 +356,9 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
         require_once('CRM/Utils/Hook.php');
         CRM_Utils_Hook::alterPaymentProcessorParams($this, $params, $registrationParams);
 
-        /**
-         * @custom Add 'successUrl' param to the notification URL, which will include the URL to redirect to upon success.
-         * This query param is being retrieved in 'uk_co_circleinteractive_payment_sagepay_notify' when redirecting.
-         * This hack only comes into action when the user is submitting a webform, as opposed to civi's native page.
-         */
+        /** @custom */
         $this->addReturnParams($registrationParams);
+        // end custom
 
         // Construct post string from registrationParams array
 
@@ -762,7 +759,15 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
         return $output;
     }
 
+    /**
+     * Add params to the notification URL, which are relevant to webforms. These params would be retrieved in
+     * 'uk_co_circleinteractive_payment_sagepay_notify' when redirecting.
+     *
+     * @custom
+     * @param $registrationParams
+     */
     protected function addReturnParams(&$registrationParams) {
+        // This is only true for Webforms, and not for Civi's native forms
         if (!empty($registrationParams['return'])) {
             $parsedUrl = drupal_parse_url($registrationParams['return']);
 
@@ -788,5 +793,5 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
         }
     }
 
-};
+}
 
