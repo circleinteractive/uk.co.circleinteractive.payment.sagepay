@@ -293,6 +293,18 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
             $contact = $contact[$cid];
         
         }
+
+        if ($use_billing = CRM_Core_BAO_Setting::getItem('uk.co.circleinteractive.payment.sagepay', 'use_billing')) {
+            $location_type_id = CRM_Core_DAO::singleValueQuery("SELECT id FROM civicrm_location_type WHERE name = 'Billing'");
+            try {
+                $address = civicrm_api3('address', 'get', array(
+                    'contact_id'       => $cid,
+                    'location_type_id' => $location_type_id
+                ));
+            } catch (CiviCRM_API3_Exception $e) {
+                CRM_Core_Error::fatal('Unable to get billing address for the current contact');
+            }
+        }
         
         // Query ISO Country code for this country_id ..
         
@@ -314,15 +326,15 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
             'FailureURL'         => $notifyURL,
             'BillingFirstnames'  => $contact['first_name'],
             'BillingSurname'     => $contact['last_name'],
-            'BillingAddress1'    => $contact['street_address'],
-            'BillingCity'        => $contact['city'],
-            'BillingPostCode'    => $contact['postal_code'],
+            'BillingAddress1'    => $use_billing ? $address['street_address'] : $contact['street_address'],
+            'BillingCity'        => $use_billing ? $address['city'] : $contact['city'],
+            'BillingPostCode'    => $use_billing ? $address['postal_code'] : $contact['postal_code'],
             'BillingCountry'     => $country_iso_code,
             'DeliveryFirstnames' => $contact['first_name'],
             'DeliverySurname'    => $contact['last_name'],
-            'DeliveryAddress1'   => $contact['street_address'],
-            'DeliveryCity'       => $contact['city'],
-            'DeliveryPostcode'   => $contact['postal_code'],
+            'DeliveryAddress1'   => $use_billing ? $address['street_address'] : $contact['street_address'],
+            'DeliveryCity'       => $use_billing ? $address['city'] : $contact['city'],
+            'DeliveryPostcode'   => $use_billing ? $address['postal_code'] : $contact['postal_code'],
             'DeliveryCountry'    => $country_iso_code,
             'CustomerEMail'      => $contact['email'],
             'Basket'             => '',
