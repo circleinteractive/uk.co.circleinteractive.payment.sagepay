@@ -301,6 +301,8 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
                     'contact_id'       => $cid,
                     'location_type_id' => $location_type_id
                 ));
+                if ($address['values'])
+                    $address = reset($address['values']);
             } catch (CiviCRM_API3_Exception $e) {
                 CRM_Core_Error::fatal('Unable to get billing address for the current contact');
             }
