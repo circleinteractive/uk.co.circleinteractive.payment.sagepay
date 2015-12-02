@@ -15,18 +15,18 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
 
     protected $sagepay;
     static    $_paymentProcessor = null;
-	
+    
     function __construct($sagepay) {
         $this->sagepay = $sagepay;
         parent::__construct();
     }
-	
-	function main($component = 'contribute') {
-		
-		require_once 'CRM/Utils/Request.php';
-		require_once 'CRM/Core/DAO.php';
-		
-		$sagepay = &$this->sagepay;
+    
+    function main($component = 'contribute') {
+        
+        require_once 'CRM/Utils/Request.php';
+        require_once 'CRM/Core/DAO.php';
+        
+        $sagepay = &$this->sagepay;
         
         $objects = $ids 
                  = $input 
@@ -38,14 +38,14 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
         // Get contribution and contact ids from querystring
         $ids['contact']       = self::retrieve('cid',   'Integer', 'GET', true);
         $ids['contribution']  = self::retrieve('conid', 'Integer', 'GET', true);
-		$ids['vendor']        = self::retrieve('v',     'String',  'GET', true);
-		
-		// req'd for cancel url 
-		define('SAGEPAY_QFKEY', self::retrieve('qf', 'String', 'GET', false));
-	    	
-	    // Get post data
-		$this->getInput($input, $ids);
-		
+        $ids['vendor']        = self::retrieve('v',     'String',  'GET', true);
+        
+        // req'd for cancel url 
+        define('SAGEPAY_QFKEY', self::retrieve('qf', 'String', 'GET', false));
+            
+        // Get post data
+        $this->getInput($input, $ids);
+        
         // Rebuild vps signature using the security key stored during the registration phase.
         // Check Sagepay integration guide for more info on this procedure.
         
@@ -59,40 +59,40 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
                  "StatusDetail=Unable to retrieve security key - {$security_key['error']}\r\n" . 
                  "RedirectURL=$cancelURL\r\n";
             return;
-		}
-		
-		$input['security_key'] = $security_key;
-		
-		$signature = strtoupper(md5(implode('', array(
-		    $input['trxn_id'],        $input['invoice'],       $input['paymentStatus'], $input['TxAuthNo'],
-	        $ids['vendor'],           $input['AVSCV2'],        $security_key,           $input['AddressResult'],
-			$input['PostCodeResult'], $input['CV2Result'],     $input['GiftAid'],       $input['3DSecureStatus'],
+        }
+        
+        $input['security_key'] = $security_key;
+        
+        $signature = strtoupper(md5(implode('', array(
+            $input['trxn_id'],        $input['invoice'],       $input['paymentStatus'], $input['TxAuthNo'],
+            $ids['vendor'],           $input['AVSCV2'],        $security_key,           $input['AddressResult'],
+            $input['PostCodeResult'], $input['CV2Result'],     $input['GiftAid'],       $input['3DSecureStatus'],
             $input['CAVV'],           $input['AddressStatus'], $input['PayerStatus'],   $input['CardType'],
-			$input['Last4Digits'],    $input['DeclineCode'],   $input['ExpiryDate'],    $input['FraudResponse'],
+            $input['Last4Digits'],    $input['DeclineCode'],   $input['ExpiryDate'],    $input['FraudResponse'],
             $input['BankAuthCode']
-		))));
-	    		
-		// Compare our locally constructed signature to the VPS signature returned by Sagepay
-		if ($signature !== $input['VPSSignature']) {
+        ))));
+                
+        // Compare our locally constructed signature to the VPS signature returned by Sagepay
+        if ($signature !== $input['VPSSignature']) {
 
             CRM_Core_Error::debug_log_message('Invalid VPS Signature: ' . print_r($input, true));
-			
-			// Not matched, send INVALID response and return 
-			$url         = ($component == 'event') ? 'civicrm/event/register' : 'civicrm/contribute/transact';
-        	$cancel      = ($component == 'event') ? '_qf_Register_display'   : '_qf_Main_display';
-        	$redirectURL = CRM_Utils_System::url($url, "$cancel=1&cancel=1&qfKey=" . SAGEPAY_QFKEY, true, null, false, true); 
-			
-			echo "Status=INVALID\r\n" . 
-			     "StatusDetail=Unable to match VPS signature.\r\n" . 
-			     "RedirectURL=$redirectURL\r\n";
-			
-			$sagepay->error('Transaction failed: Invalid VPS Signature');
+            
+            // Not matched, send INVALID response and return 
+            $url         = ($component == 'event') ? 'civicrm/event/register' : 'civicrm/contribute/transact';
+            $cancel      = ($component == 'event') ? '_qf_Register_display'   : '_qf_Main_display';
+            $redirectURL = CRM_Utils_System::url($url, "$cancel=1&cancel=1&qfKey=" . SAGEPAY_QFKEY, true, null, false, true); 
+            
+            echo "Status=INVALID\r\n" . 
+                 "StatusDetail=Unable to match VPS signature.\r\n" . 
+                 "RedirectURL=$redirectURL\r\n";
+            
+            $sagepay->error('Transaction failed: Invalid VPS Signature');
 
-			return;
-		}
-	    
-	    // VPS Signature check OK ...
-	    
+            return;
+        }
+        
+        // VPS Signature check OK ...
+        
         if ($component == 'event') {
             
             $ids['event']       = self::retrieve('eid', 'Integer', 'GET', true);
@@ -131,23 +131,23 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
             
             // Not recurring ...
             } else {
-            	$sagepay->log('Transaction success: contribution', 4);
+                $sagepay->log('Transaction success: contribution', 4);
                 return $this->single($input, $ids, $objects, false, false);
             }
         
         // Event ...
         } else {
-			$sagepay->log('Transaction success: event', 4);
+            $sagepay->log('Transaction success: event', 4);
             return $this->single($input, $ids, $objects, false, false);
         }
-		
-	}
-	
-	// There is no IPN notification for a REPEAT transaction. Instead, we get an instant response,
-	// then call this function to complete transaction / mark as failed.
-	public function processRepeatTransaction(&$params, &$response) {
-	    
-	    $sagepay = &$this->sagepay;
+        
+    }
+    
+    // There is no IPN notification for a REPEAT transaction. Instead, we get an instant response,
+    // then call this function to complete transaction / mark as failed.
+    public function processRepeatTransaction(&$params, &$response) {
+        
+        $sagepay = &$this->sagepay;
         $objects = array();
    
         if ($response['Status'] == 'OK') {
@@ -204,8 +204,8 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
             $sagepay->updateFailureCount($params['recurID']);
             
             // Mark contribution as Failed
-	        require_once 'CRM/Contribute/PseudoConstant.php';
-	        $status_id = array_flip(CRM_Contribute_PseudoConstant::contributionStatus());
+            require_once 'CRM/Contribute/PseudoConstant.php';
+            $status_id = array_flip(CRM_Contribute_PseudoConstant::contributionStatus());
             
             if ($sagepay->getCRMVersion() >= 3.4) {
                 civicrm_api("Contribution", "create", 
@@ -227,10 +227,10 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
             return false;  
         
         }
-	
-	}
-	
-	static function retrieve($name, $type, $location = 'POST', $abort = true) {
+    
+    }
+    
+    static function retrieve($name, $type, $location = 'POST', $abort = true) {
         
         static $store = null;
         $value = CRM_Utils_Request::retrieve($name, $type, $store, false, null, $location);
@@ -242,9 +242,9 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
         return $value;
         
     }
-	
-	protected function getInput(&$input, &$ids) {
-		
+    
+    protected function getInput(&$input, &$ids) {
+        
         if (!@$this->getBillingID($ids))
             return false;
             
@@ -275,12 +275,12 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
         $input['BankAuthCode']   = self::retrieve('BankAuthCode',  'String', 'POST', false);
 
             
-	}
-	
-	function recur(&$input, &$ids, &$objects, $first) {
+    }
+    
+    function recur(&$input, &$ids, &$objects, $first) {
         
         require_once 'CRM/Contribute/PseudoConstant.php';
-	    $contribution_status_id = array_flip(CRM_Contribute_PseudoConstant::contributionStatus());
+        $contribution_status_id = array_flip(CRM_Contribute_PseudoConstant::contributionStatus());
         
         $recur              = &$objects['contributionRecur'];
         $sagepay            = &$this->sagepay;
@@ -374,8 +374,8 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
     
     function single(&$input, &$ids, &$objects, $recur = false, $first = false) {
         
-		$contribution =& $objects['contribution'];
-	    
+        $contribution =& $objects['contribution'];
+        
         // make sure the invoice is valid and matches what we have in the contribution record
         if (!$recur || ($recur && $first)) {
             if ($contribution->invoice_id != $input['invoice']) {
@@ -410,10 +410,10 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
         $url         = ($this->component == 'event') ? 'civicrm/event/register' : 'civicrm/contribute/transact';
         $cancel      = ($this->component == 'event') ? '_qf_Register_display'   : '_qf_Main_display';
         $cancelURL   = CRM_Utils_System::url($url, "$cancel=1&cancel=1&qfKey=" . SAGEPAY_QFKEY, true, null, false, true);
-		
-		// Check status returned by gateway ...
-		
-	    if ($status == 'REJECTED' || $status == 'ERROR' || $status == 'NOTAUTHED') {
+        
+        // Check status returned by gateway ...
+        
+        if ($status == 'REJECTED' || $status == 'ERROR' || $status == 'NOTAUTHED') {
             
             // Card rejected, not authed, unspecified error
             $result = $this->failed($objects, $transaction);
@@ -423,8 +423,8 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
                  "StatusDetail=Status: $status in notification callback\r\n";
             
             return $result;
-		
-		} else if ($status == 'ABORT') {
+        
+        } else if ($status == 'ABORT') {
             
             // Cancelled by user
             $result = $this->cancelled($objects, $transaction);
@@ -442,7 +442,7 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
             
             $url       = ($this->component == 'event') ? 'civicrm/event/register' : 'civicrm/contribute/transact';
             $cancel    = ($this->component == 'event') ? '_qf_Register_display'   : '_qf_Main_display';
-            $cancelURL = CRM_Utils_System::url($url, "$cancel=1&cancel=1&qfKey=" . SAGEPAY_QFKEY, true, null, false, true);			
+            $cancelURL = CRM_Utils_System::url($url, "$cancel=1&cancel=1&qfKey=" . SAGEPAY_QFKEY, true, null, false, true);         
             
             echo "Status=INVALID\r\n" .
                  "RedirectURL=$cancelURL\r\n" . 
@@ -450,10 +450,10 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
             
             return $result;
             
-		}
-		
-		// If we arrived here, Status = OK
-		
+        }
+        
+        // If we arrived here, Status = OK
+        
         // Check if contribution is already complete, if so ignore this ipn
         //if ($contribution->contribution_status_id == 1) {
         //    $transaction->commit();
@@ -467,10 +467,10 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
         $url       = ($input['component'] == 'event' ) ? 'civicrm/event/register' : 'civicrm/contribute/transact';
         $returnURL = CRM_Utils_System::url($url, "_qf_ThankYou_display=1&qfKey=" . SAGEPAY_QFKEY, true, null, false, true);
 
-		echo "Status=OK\r\n" . 
-		     "RedirectURL=$returnURL\r\n";
-		
+        echo "Status=OK\r\n" . 
+             "RedirectURL=$returnURL\r\n";
+        
     }
-	
+    
 
 };
