@@ -470,12 +470,10 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
         // Check if contribution is already complete, if so ignore this ipn
         if ($contribution->contribution_status_id == 1) {
             $transaction->commit();
-            CRM_Core_Error::debug_log_message("returning since contribution has already been handled");
-            echo "Success: Contribution has already been handled";
-            return true;
+            CRM_Core_Error::debug_log_message("Contribution has already been handled");
+        } else {
+            $this->completeTransaction($input, $ids, $objects, $transaction, $recur);
         }
-        
-        $this->completeTransaction($input, $ids, $objects, $transaction, $recur);
 
         $url = ($input['component'] == 'event' ) ? 'civicrm/event/register' : 'civicrm/contribute/transact';
 
