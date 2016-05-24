@@ -161,7 +161,7 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
 
     // Initialize REPEAT transaction
     public function doRepeatCheckout(&$params) {
-
+watchdog('andyw', 'repeat = <pre>' . print_r($params, true) . '</pre>');
         $config = &CRM_Core_Config::singleton();
         $repeatParams = array(
             'VPSProtocol'         => '3.00',
@@ -192,7 +192,7 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
 
         $url      = $this->_paymentProcessor['url_recur'];
         $response = $this->requestPost($url, $post);
-
+        
         $this->log('Sending REPEAT registration post. Params = ' . print_r($repeatParams, true), 4);
         $this->log('REPEAT post response. Response = ' . print_r($response, true), 4);
 
@@ -465,21 +465,28 @@ class uk_co_circleinteractive_payment_sagepay extends CRM_Core_Payment {
         $contribution_status_id = array_flip(CRM_Contribute_PseudoConstant::contributionStatus());
         $ppIDs = self::getIDs();
 
+        if (!count($ppIDs))
+            return;
+
+
+        $ppIDs = implode(',', $ppIDs);
+        $next_sched_contribution = (self::getCRMVersion() >= 4.4 ? 'next_sched_contribution_date' : 'next_sched_contribution');
+
         // Retrieve all recurring payments for Sagepay that are 'In progress' and have a payment due
-        $recur = CRM_Core_DAO::executeQuery("
+        $recur = CRM_Core_DAO::executeQuery($query = "
            SELECT * FROM civicrm_contribution_recur
-            WHERE next_sched_contribution < NOW()
+            WHERE $next_sched_contribution < NOW()
               AND contribution_status_id = 5
-              AND payment_processor_id IN (%1, %2)
-        ", array(
+              AND payment_processor_id IN ($ppIDs)
+        "/*, array(
               1 => array($ppIDs[0], 'Integer'),
               2 => array($ppIDs[1], 'Integer')
-           )
+           )*/
         );
-
+        watchdog('andyw', 'query = ' . $query . ', ppids = <pre>' . print_r($ppIDs, true) . '</pre>');
         // For each of those ..
         while ($recur->fetch()) {
-
+            watchdog('andyw', 'found recur = <pre>' . print_r($recur, true) . '</pre>');
             require_once 'api/api.php';
 
             $existing = civicrm_api("Contribution", "get",

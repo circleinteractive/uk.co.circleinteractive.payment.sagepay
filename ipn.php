@@ -359,7 +359,7 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
         
         // If not completed, update next_sched_contribution date
         if ($recur->contribution_status_id != $contribution_status_id['Completed'])      
-            $recur->next_sched_contribution = date(
+            $recur->next_sched_contribution = $recur->next_sched_contribution_date = date(
                 'YmdHis', 
                 strtotime('+' . $recur->frequency_interval . ' ' . $recur->frequency_unit)
             );
