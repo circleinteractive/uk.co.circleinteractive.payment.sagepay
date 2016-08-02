@@ -31,9 +31,9 @@
    <urlSiteDefault>https://live.sagepay.com/gateway/service/vspserver-register.vsp</urlSiteDefault>
    <urlApiDefault></urlApiDefault>
    <urlRecurDefault>https://live.sagepay.com/gateway/service/repeat.vsp</urlRecurDefault>
-   <urlSiteTestDefault>https://test.sagepay.com/simulator/VSPServerGateway.asp?Service=VendorRegisterTx</urlSiteTestDefault>
+   <urlSiteTestDefault>https://test.sagepay.com/gateway/service/vspserver-register.vsp</urlSiteTestDefault>
    <urlApiTestDefault></urlApiTestDefault>
-   <urlRecurTestDefault>https://test.sagepay.com/simulator/VSPServerGateway.asp?Service=VendorRepeatTx</urlRecurTestDefault>
+   <urlRecurTestDefault>https://test.sagepay.com/gateway/service/repeat.vsp</urlRecurTestDefault>
    <urlButtonDefault></urlButtonDefault>
    <urlButtonTestDefault></urlButtonTestDefault>
    <billingMode>notify</billingMode>
