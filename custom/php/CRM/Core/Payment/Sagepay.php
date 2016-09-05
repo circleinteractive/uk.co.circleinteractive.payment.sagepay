@@ -138,8 +138,9 @@ class CRM_Core_Payment_Sagepay extends CRM_Core_Payment {
         // Construct notification url querystring params
         // SP will reject notification urls over 255 chars, so param keys are kept
         // brief to avoid this
+        $ppIDs = self::getIDs();
         $notifyParams = [
-            'processor_name' => 'Sagepay',
+            'processor_id'   => $this->_mode == 'test' ? $ppIDs['test'] : $ppIDs['live'],
             'cid'            => $params['contactID'],
             'conid'          => $params['contributionID'],
             'mo'             => $component,
@@ -309,14 +310,28 @@ class CRM_Core_Payment_Sagepay extends CRM_Core_Payment {
      * Get an array of payment processor ids for processor
      */
     public static function getIDs() {
-        $ids = [];
-        $dao = CRM_Core_DAO::executeQuery("
-            SELECT id FROM civicrm_payment_processor 
-             WHERE class_name = 'Payment_Sagepay'
-        ");
-        while ($dao->fetch())
-            $ids[] = $dao->id;
-        return $ids;
+
+        try {
+
+            $result = civicrm_api3('PaymentProcessor', 'get', [
+                'class_name'     => 'Payment_Sagepay',
+                'return.id'      => 1,
+                'return.is_test' => 1
+            ]);
+
+        } catch (CiviCRM_API3_Exception $e) {
+            CRM_Core_Error::fatal(ts("Unable to get instance ids for payment processor 'Sagepay': %1", [
+                1 => $e->getMessage()
+            ]));
+        }
+
+        $processors = [];
+
+        foreach ($result['values'] as $processor)
+            $processors[$processor['is_test'] ? 'test' : 'live'] = $processor['id'];
+
+        return $processors;
+
     }
 
     /**
