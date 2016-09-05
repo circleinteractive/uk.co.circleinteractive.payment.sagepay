@@ -507,7 +507,8 @@ class CRM_Core_Payment_Sagepay extends CRM_Core_Payment {
             CURLOPT_RETURNTRANSFER => 1,
             CURLOPT_TIMEOUT        => 30,
             CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => 2
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_SSLVERSION     => CURL_SSLVERSION_TLSv1
         ]);
 
         // Send request and split response into name/value pairs
