@@ -493,14 +493,14 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
                 $query[] = "token={$token}";
             }
 			
-			/* webform email trigger change start */
-			if($node != '' && $sid != ''){
-				$webform_node = node_load($node);
-				$header = theme('webform_results_submissions_header', array('node' => $webform_node));
-				$webform_submission = webform_get_submissions(array('nid'=>$node,'sid'=>$sid), $header);
-				webform_submission_send_mail($webform_node, $webform_submission[$sid]);
-			}
-			/* webform email trigger change End */
+		/* webform email trigger change start */
+		if($node != '' && $sid != ''){
+			$webform_node = node_load($node);
+			$header = theme('webform_results_submissions_header', array('node' => $webform_node));
+			$webform_submission = webform_get_submissions(array('nid'=>$node,'sid'=>$sid), $header);
+			webform_submission_send_mail($webform_node, $webform_submission[$sid]);
+		}
+		/* webform email trigger change End */
 
             $returnURL = CRM_Utils_System::url("node/{$node}/done", implode('&', $query), true, null, false, true);
         } else {
