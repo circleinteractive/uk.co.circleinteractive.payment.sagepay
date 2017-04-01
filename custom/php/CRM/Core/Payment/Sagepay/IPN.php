@@ -31,10 +31,11 @@ class CRM_Core_Payment_Sagepay_IPN extends CRM_Core_Payment_BaseIPN {
                          = $component;
 
         // Get contribution and contact ids from querystring
-        $ids['contact']       = self::retrieve('cid',   'Integer', 'GET', true);
-        $ids['contribution']  = self::retrieve('conid', 'Integer', 'GET', true);
-        $ids['vendor']        = self::retrieve('v',     'String',  'GET', true);
-        
+        $ids['contact']          = self::retrieve('cid', 'Integer', 'GET', true);
+        $ids['contribution']     = self::retrieve('conid', 'Integer', 'GET', true);
+        $ids['vendor']           = strtolower(self::retrieve('v', 'String',  'GET', true));
+        $ids['paymentProcessor'] = self::retrieve('processor_id', 'Integer', 'GET', true);
+
         // req'd for cancel url 
         define('SAGEPAY_QFKEY', self::retrieve('qf', 'String', 'GET', false));
             
@@ -58,7 +59,7 @@ class CRM_Core_Payment_Sagepay_IPN extends CRM_Core_Payment_BaseIPN {
         
         $input['security_key'] = $security_key;
         
-        $signature = strtoupper(md5(implode('', [
+        $signature = strtoupper(md5(implode('', $test = [
             $input['trxn_id'],        $input['invoice'],       $input['paymentStatus'], $input['TxAuthNo'],
             $ids['vendor'],           $input['AVSCV2'],        $security_key,           $input['AddressResult'],
             $input['PostCodeResult'], $input['CV2Result'],     $input['GiftAid'],       $input['3DSecureStatus'],
@@ -103,6 +104,9 @@ class CRM_Core_Payment_Sagepay_IPN extends CRM_Core_Payment_BaseIPN {
             $ids['onbehalf_dupe_alert'] = self::retrieve('obda', 'Integer', 'GET', false);
         
         }
+
+        CRM_Core_Error::debug_log_message('input: ' . print_r($input, true));
+        CRM_Core_Error::debug_log_message('ids: ' . print_r($ids, true));
 
         if (!$this->validateData($input, $ids, $objects)) {
             sagepay_log('Transaction failed: Unable to validate data', __CLASS__ . '::' . __METHOD__, __LINE__);
@@ -230,7 +234,9 @@ class CRM_Core_Payment_Sagepay_IPN extends CRM_Core_Payment_BaseIPN {
         
         if (!@$this->getBillingID($ids))
             return false;
-            
+        
+        $input['payment_processor_id'] = self::retrieve('processor_id', 'Integer', 'GET', false);
+
         $input['VPSProtocol']    = self::retrieve('VPSProtocol',    'Money',  'POST', false);
         $input['TxType']         = self::retrieve('TxType',         'String', 'POST', false);
         $input['invoice']        = self::retrieve('VendorTxCode',   'String', 'POST', false);
