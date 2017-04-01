@@ -1,21 +1,16 @@
 <?php
 
-/** RM: Customisations have been annotated using a custom PHPDoc tag @custom */
-
-/* 
- * Sagepay Extension for CiviCRM - Circle Interactive 2012
- * Author: andyw@circle
+/**
+ * Sagepay Extension for CiviCRM - Circle Interactive 2010-16
  * Callback Notification Class
+ * @author andyw@circle
  *
- * Distributed under GPL v2
- * https://www.gnu.org/licenses/gpl-2.0.html
+ * RM: Customisations have been annotated using a custom PHPDoc tag @custom
  */
 
-require_once 'CRM/Core/Payment/BaseIPN.php';
-
-class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_BaseIPN {
-
-    protected $sagepay;
+class CRM_Core_Payment_Sagepay_IPN extends CRM_Core_Payment_BaseIPN {
+	
+	protected $sagepay;
     static    $_paymentProcessor = null;
     
     function __construct($sagepay) {
@@ -25,14 +20,12 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
     
     function main($component = 'contribute') {
         
-        require_once 'CRM/Utils/Request.php';
-        require_once 'CRM/Core/DAO.php';
-        
         $sagepay = &$this->sagepay;
+        $token   = new CRM_Core_Payment_Sagepay_Token();
         
         $objects = $ids 
                  = $input 
-                 = array();
+                 = [];
                  
         $this->component = $input['component'] 
                          = $component;
@@ -50,12 +43,12 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
         
         // Rebuild vps signature using the security key stored during the registration phase.
         // Check Sagepay integration guide for more info on this procedure.
-        
-        $security_key = $sagepay->api('get', 'key', array(
+        $security_key = $token->get([
+        	'data_type' => 'key',
             'entity_id' => $ids['contribution']
-        ));
+        ]);
 
-        // Bail if there was an error retrieving the security key
+        // Bail out if there was an error retrieving the security key
         if (is_array($security_key) and isset($security_key['error'])) {
             echo "Status=ERROR\r\n" . 
                  "StatusDetail=Unable to retrieve security key - {$security_key['error']}\r\n" . 
@@ -65,14 +58,14 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
         
         $input['security_key'] = $security_key;
         
-        $signature = strtoupper(md5(implode('', array(
+        $signature = strtoupper(md5(implode('', [
             $input['trxn_id'],        $input['invoice'],       $input['paymentStatus'], $input['TxAuthNo'],
             $ids['vendor'],           $input['AVSCV2'],        $security_key,           $input['AddressResult'],
             $input['PostCodeResult'], $input['CV2Result'],     $input['GiftAid'],       $input['3DSecureStatus'],
             $input['CAVV'],           $input['AddressStatus'], $input['PayerStatus'],   $input['CardType'],
             $input['Last4Digits'],    $input['DeclineCode'],   $input['ExpiryDate'],    $input['FraudResponse'],
             $input['BankAuthCode']
-        ))));
+        ])));
                 
         // Compare our locally constructed signature to the VPS signature returned by Sagepay
         if ($signature !== $input['VPSSignature']) {
@@ -88,7 +81,7 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
                  "StatusDetail=Unable to match VPS signature.\r\n" . 
                  "RedirectURL=$redirectURL\r\n";
             
-            $sagepay->error('Transaction failed: Invalid VPS Signature');
+            sagepay_log('Transaction failed: Invalid VPS Signature');
 
             return;
         }
@@ -112,7 +105,7 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
         }
 
         if (!$this->validateData($input, $ids, $objects)) {
-            $sagepay->error('Transaction failed: Unable to validate data', __CLASS__ . '::' . __METHOD__, __LINE__);
+            sagepay_log('Transaction failed: Unable to validate data', __CLASS__ . '::' . __METHOD__, __LINE__);
             return false;
         }
 
@@ -122,7 +115,7 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
         if ($component == 'contribute') {
             
             // Recurring ...
-            if (@$ids['contributionRecur']) {
+            if (isset($ids['contributionRecur']) and !empty($ids['contributionRecur'])) {
                 
                 // check if first contribution is completed, else complete first contribution
                 $first = true;
@@ -133,13 +126,13 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
             
             // Not recurring ...
             } else {
-                $sagepay->log('Transaction success: contribution', 4);
+                sagepay_log('Transaction success: contribution');
                 return $this->single($input, $ids, $objects, false, false);
             }
         
         // Event ...
         } else {
-            $sagepay->log('Transaction success: event', 4);
+            sagepay_log('Transaction success: event');
             return $this->single($input, $ids, $objects, false, false);
         }
         
@@ -150,30 +143,30 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
     public function processRepeatTransaction(&$params, &$response) {
         
         $sagepay = &$this->sagepay;
-        $objects = array();
+        $objects = [];
    
         if ($response['Status'] == 'OK') {
             
-            // Spoof enough notification params to allow IPN code to complete the transaction ..
-            $ids = array(
+            // Spoof sufficient notification params to allow IPN code to complete the transaction ..
+            $ids = [
                 'contact'           => $params['contactID'],
                 'contribution'      => $params['contributionID'],
                 'contributionRecur' => $params['recurID'],
                 'membership'        => $params['membershipID']
-            );
+            ];
             
-            $input = array(
+            $input = [
                 'component'     => 'contribute',
                 'paymentStatus' => $response['Status'],
                 'invoice'       => $params['RelatedVendorTxCode'],
                 'trxn_id'       => $response['VPSTxId'],
                 'amount'        => $params['amount']
-            );
+            ];
             
             define('SAGEPAY_QFKEY', ''); // Not relevant in this context, but define something to prevent warnings
             
             if (!$this->validateData($input, $ids, $objects)) {
-                $sagepay->error('Transaction failed: Unable to validate data', __CLASS__ . '::' . __METHOD__, __LINE__);
+                sagepay_log('Transaction failed: Unable to validate data', __CLASS__ . '::' . __METHOD__, __LINE__);
                 return false;
             }
 
@@ -183,7 +176,7 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
             
             // Grab output and log if logging level >= 4
             $output = ob_get_clean();
-            $sagepay->log("Processed REPEAT transaction:\n" . $output, 4);
+            sagepay_log("Processed REPEAT transaction:\n" . $output);
             
             return true;
             
@@ -191,40 +184,28 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
             
             // Handle != OK responses ..
             
-            // Log stuff if logging level >= 3
-            $sagepay->log(
-                sprintf(
-                    'Payment failure on recurring payment at Sagepay on contribution_id %d using contribution_recur_id %d.\n' .
-                    'Sagepay system responded: %s',
-                    $ids['contribution'],
-                    $ids['contributionRecur'],
-                    print_r($response, true)
-                ), 3
-            );
+            sagepay_log(sprintf(
+                'Payment failure on recurring payment at Sagepay on contribution_id %d using contribution_recur_id %d.\n' .
+                'Sagepay system responded: %s',
+                $ids['contribution'],
+                $ids['contributionRecur'],
+                print_r($response, true)
+            ));
             
             // Update contribution_recur record failure count
             $sagepay->updateFailureCount($params['recurID']);
             
             // Mark contribution as Failed
-            require_once 'CRM/Contribute/PseudoConstant.php';
             $status_id = array_flip(CRM_Contribute_PseudoConstant::contributionStatus());
             
-            if ($sagepay->getCRMVersion() >= 3.4) {
-                civicrm_api("Contribution", "create", 
-                    $ref = array(
-                        'version'                => '3',
-                        'id'                     => $params['contributionID'],
-                        'contribution_status_id' => $status_id['Failed']
-                    )
-                );            
-            } else {
-                civicrm_contribution_add(
-                    $ref = array(
-                        'id'                     => $params['contributionID'],
-                        'contribution_status_id' => $status_id['Failed']
-                    )
-                );
-            }
+            try {
+	            civicrm_api3("Contribution", "create", [
+	                'id'                     => $params['contributionID'],
+	                'contribution_status_id' => $status_id['Failed']
+	            ]);
+	        } catch (CiviCRM_API3_Exception $e) {
+	        	sagepay_log("Failed updating contribution status to 'Failed' on transaction: " . $e->getMessage());
+	        }          
             
             return false;  
         
@@ -284,13 +265,18 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
         require_once 'CRM/Contribute/PseudoConstant.php';
         $contribution_status_id = array_flip(CRM_Contribute_PseudoConstant::contributionStatus());
         
-        $recur              = &$objects['contributionRecur'];
-        $sagepay            = &$this->sagepay;
-        $sagepay_recur_data = $sagepay->api('get', 'recurring', array('entity_id' => $recur->id));
+        $recur   = &$objects['contributionRecur'];
+        $sagepay = &$this->sagepay;
+        $token   = new CRM_Core_Payment_Sagepay_Token();
+        
+        $sagepay_recur_data = $token->get([
+        	'data_type' => 'recurring',
+        	'entity_id' => $recur->id
+        ]);
         
         // Make sure invoice id is valid and matches the contribution record
         if ($recur->invoice_id != $input['invoice']) {
-            $sagepay->log("Invoice values don't match between database and Sagepay request", 3);
+            sagepay_log("Invoice values don't match between database and Sagepay request");
             echo "Failure: Invoice values don't match between database and Sagepay request\r\n";
             return false;
         }
@@ -298,7 +284,7 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
         $now = date('YmdHis');
 
         // Fix dates that already exist
-        foreach (array('create', 'start', 'end', 'cancel', 'modified') as $date) {
+        foreach (['create', 'start', 'end', 'cancel', 'modified'] as $date) {
             $name = "{$date}_date";
             if (isset($recur->$name) and $recur->$name) 
                 $recur->$name = CRM_Utils_Date::isoToMysql($recur->$name);
@@ -315,20 +301,21 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
             $recur->contribution_status_id = $contribution_status_id['In Progress'];
                 
         if ($first) {
+            
             // Create internal recurring record, storing VPSTxId, VendorTxCode etc for REPEAT transactions
-            $sagepay->api('insert', 'recurring',
-                array(
-                    'entity_id' => $recur->id,
-                    'data' => array(
-                        'RelatedVPSTxId'      => $input['trxn_id'],
-                        'RelatedVendorTxCode' => $input['invoice'],
-                        'RelatedSecurityKey'  => $input['security_key'],
-                        'RelatedTxAuthNo'     => $input['TxAuthNo'],
-                        'installments'        => $recur->installments,
-                        'current_installment' => 1
-                    )
-                )
-            );
+            $token->create([
+            	'data_type' => 'recurring',
+            	'entity_id' => $recur->id,
+            	'data' => [                      
+            		'RelatedVPSTxId'      => $input['trxn_id'],
+                    'RelatedVendorTxCode' => $input['invoice'],
+                    'RelatedSecurityKey'  => $input['security_key'],
+                    'RelatedTxAuthNo'     => $input['TxAuthNo'],
+                    'installments'        => $recur->installments,
+                    'current_installment' => 1
+                ]
+            ]);
+
             // And set recur transaction id to that of the first contribution
             $recur->trxn_id = $input['trxn_id'];
         
@@ -342,24 +329,27 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
                 $recur->end_date               = $now;
                 
                 // And delete internal recurring record
-                $sagepay->api('delete', 'recurring', array(
+                $token->delete([
+                	'data_type' => 'recurring',
                     'entity_id' => $recur->id
-                ));
+                ]);
             
             } else {
+
                 // Otherwise, update internal record with new installment count
-                $sagepay->api('update', 'recurring', 
-                    array(
-                        'entity_id' => $recur->id,
-                        'data'      => $sagepay_recur_data
-                    )
-                );
+                $token->update([
+                	'data_type' => 'recurring',
+                    'entity_id' => $recur->id,
+                    'data'      => $sagepay_recur_data
+                ]);
+
             }
+        
         }
         
         // If not completed, update next_sched_contribution date
         if ($recur->contribution_status_id != $contribution_status_id['Completed'])      
-            $recur->next_sched_contribution = $recur->next_sched_contribution_date = date(
+            $recur->next_sched_contribution = date(
                 'YmdHis', 
                 strtotime('+' . $recur->frequency_interval . ' ' . $recur->frequency_unit)
             );
@@ -372,6 +362,7 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
                 
         // And complete single transaction / contribution record
         return $this->single($input, $ids, $objects, true, $first);
+    
     }
     
     function single(&$input, &$ids, &$objects, $recur = false, $first = false) {
@@ -504,5 +495,4 @@ class uk_co_circleinteractive_payment_sagepay_notify extends CRM_Core_Payment_Ba
         
     }
     
-
-};
+}
