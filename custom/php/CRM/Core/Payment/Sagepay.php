@@ -195,7 +195,7 @@ class CRM_Core_Payment_Sagepay extends CRM_Core_Payment {
                 if ($address['values'])
                     $address = reset($address['values']);
             } catch (CiviCRM_API3_Exception $e) {
-                CRM_Core_Error::fatal('Unable to get billing address for the current contact: ' . $e->getMessage());
+              CRM_Core_Error::statusBounce('Unable to get billing address for the current contact: ' . $e->getMessage(), NULL, 'Sagepay');
             }
         }
 
@@ -213,7 +213,7 @@ class CRM_Core_Payment_Sagepay extends CRM_Core_Payment {
             'VendorTxCode'       => $params['invoiceID'],
             'Amount'             => sprintf("%.2f", $params['amount']),
             'Currency'           => $params['currencyID'],
-            'Description'        => substr($params['item_name'], 0, 100),
+            'Description'        => 'Payment from CiviCRM',
             'NotificationURL'    => $notifyURL,
             'FailureURL'         => $notifyURL,
             'BillingFirstnames'  => $contact['first_name'],
@@ -236,6 +236,13 @@ class CRM_Core_Payment_Sagepay extends CRM_Core_Payment {
             'Profile'            => 'NORMAL'
 
         ];
+
+        if (isset($params['item_name'])) {
+            $registrationParams['Description'] = substr($params['item_name'], 0, 100);
+        }
+        elseif (isset($params['description'])) {
+            $registrationParams['Description'] = substr($params['description'], 0, 100);
+        }
 
         // Require additional state params where country is US
         if ($country_iso_code == 'US')
@@ -300,7 +307,7 @@ class CRM_Core_Payment_Sagepay extends CRM_Core_Payment {
                           $errmsg . "<br />Please contact the site administrator.";
 
             // Display error(s)
-            CRM_Core_Error::fatal($errmsg);
+            CRM_Core_Error::statusBounce($errmsg, NULL, 'Sagepay');
 
         }
 
