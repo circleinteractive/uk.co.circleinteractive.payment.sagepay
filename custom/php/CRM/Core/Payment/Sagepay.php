@@ -519,7 +519,7 @@ class CRM_Core_Payment_Sagepay extends CRM_Core_Payment {
         ]);
 
         // Send request and split response into name/value pairs
-        $response = split(chr(10), curl_exec($session));
+        $response = explode(chr(10), curl_exec($session));
 
         // Check that a connection was made
         if (curl_error($session)){
