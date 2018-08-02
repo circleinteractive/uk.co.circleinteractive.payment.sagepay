@@ -1,27 +1,32 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0"?>
 <extension key="uk.co.circleinteractive.payment.sagepay" type="module">
-  <downloadUrl>http://extensions.circle-interactive.co.uk/uk.co.circleinteractive.payment.sagepay-v4.0.0.zip</downloadUrl>
   <file>sagepay</file>
-  <name>Sagepay</name>
+  <name>Sagepay Payment Processor</name>
   <description>Sagepay Payment Processor</description>
-  <urls>
-    <url desc="Main Extension Page">http://www.circle-interactive.co.uk</url>
-  </urls>
-  <license>GPL2</license>
+  <license>AGPL-3.0</license>
   <maintainer>
-    <author>Andrew Walker - Circle Interactive</author>
-    <email>andyw (at) circle-interactive (dot) co (dot) uk</email>
+    <author>Circle Interactive</author>
+    <email>support(at) circle-interactive (dot) co (dot) uk</email>
   </maintainer>
-  <releaseDate>2016-08-01</releaseDate>
-  <version>4.0.0</version>
+  <urls>
+    <url desc="Main Extension Page">https://github.com/circleinteractive/uk.co.circleinteractive.payment.sagepay/blob/master/README.md</url>
+    <url desc="Documentation">https://github.com/circleinteractive/uk.co.circleinteractive.payment.sagepay/blob/master/README.md</url>
+    <url desc="Support">https://github.com/circleinteractive/uk.co.circleinteractive.payment.sagepay/issues</url>
+    <url desc="Licensing">http://www.gnu.org/licenses/agpl-3.0.html</url>
+  </urls>
+  <releaseDate>2018-08-02</releaseDate>
+  <version>5.0.0</version>
   <develStage>stable</develStage>
   <compatibility>
-    <ver>4.2</ver>
-    <ver>4.3</ver>
-    <ver>4.4</ver>
-    <ver>4.5</ver>
-    <ver>4.6</ver>
     <ver>4.7</ver>
+    <ver>5.0</ver>
+    <ver>5.1</ver>
+    <ver>5.2</ver>
+    <ver>5.3</ver>
+    <ver>5.4</ver>
   </compatibility>
   <comments>For support, please contact project team on the forums.</comments>
+  <civix>
+    <namespace>CRM/Sagepay</namespace>
+  </civix>
 </extension>
