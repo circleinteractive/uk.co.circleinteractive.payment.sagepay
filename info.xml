@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <extension key="uk.co.circleinteractive.payment.sagepay" type="module">
-  <downloadUrl>http://extensions.circle-interactive.co.uk/uk.co.circleinteractive.payment.sagepay-v4.0.0.zip</downloadUrl>
+  <downloadUrl>https://github.com/circleinteractive/uk.co.circleinteractive.payment.sagepay/archive/4.6.zip</downloadUrl>
   <file>sagepay</file>
   <name>Sagepay</name>
   <description>Sagepay Payment Processor</description>
